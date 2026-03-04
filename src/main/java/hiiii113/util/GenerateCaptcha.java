@@ -4,7 +4,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class GenerateCaptcha
 {
-    public String getCaptcha()
+    public static String getCaptcha()
     {
         // 生成一个在[100000, 999999]之间的验证码
         int code = ThreadLocalRandom.current().nextInt(100000, 999999);

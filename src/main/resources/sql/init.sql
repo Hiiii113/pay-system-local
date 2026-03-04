@@ -14,9 +14,10 @@ create table user
 create table transaction_record
 (
     id int unsigned primary key auto_increment comment '主键',
-    user_id int unsigned not null comment '关联用户id',
+    user_id int unsigned not null comment '关联用户id null则表示存/取款',
     type tinyint not null comment '交易类型(1. 存款 2. 取款 3. 转入 4. 转出)',
     amount decimal(10, 2) not null comment '金额',
     target_user_id int unsigned null comment '交易对象 null: 存/取款',
+    newBalance decimal(10, 2) not null comment '操作完之后的余额',
     create_time datetime not null default current_timestamp comment '订单创建时间'
 ) comment '流水记录表'

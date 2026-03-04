@@ -38,6 +38,12 @@ public class Result
         return new Result(true, msg, data);
     }
 
+    // 只带数据的成功返回方法
+    public static Result success(Object data)
+    {
+        return new Result(true, null, data);
+    }
+
     // 不带数据的失败返回方法
     public static Result fail()
     {
@@ -54,5 +60,11 @@ public class Result
     public static Result fail(String msg, Object data)
     {
         return new Result(false, msg, data);
+    }
+
+    // 只带数据的失败返回方法
+    public static Result fail(Object data)
+    {
+        return new Result(false, null, data);
     }
 }
