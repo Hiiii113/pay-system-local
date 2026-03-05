@@ -30,13 +30,10 @@ public class TransactionRecordDaoImpl implements TransactionRecordDao
 
     // 添加一笔新的流水
     @Override
-    public int addTransaction(Integer userId, Integer type, BigDecimal amount, Integer targetUserId, BigDecimal newBalance) throws SQLException
+    public int addTransaction(Connection conn, Integer userId, Integer type, BigDecimal amount, Integer targetUserId, BigDecimal newBalance) throws SQLException
     {
         String sql = "insert into transaction_record(user_id,type,amount,target_user_id,newBalance) values(?,?,?,?,?)";
-        try (
-                Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-                PreparedStatement ps = conn.prepareStatement(sql)
-        )
+        try (PreparedStatement ps = conn.prepareStatement(sql))
         {
             ps.setInt(1, userId);
             ps.setInt(2, type);

@@ -71,17 +71,14 @@ public class UserDaoImpl implements UserDao
     }
 
     @Override
-    public int modifyBalanceById(Integer userId, BigDecimal balance) throws SQLException
+    public int modifyBalanceById(Connection conn, Integer userId, BigDecimal balance) throws SQLException
     {
         String sql = "update user set balance = ? where id = ? ";
-        try (
-                Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-                PreparedStatement ps = conn.prepareStatement(sql))
+        try (PreparedStatement ps = conn.prepareStatement(sql))
         {
             ps.setBigDecimal(1, balance);
             ps.setInt(2, userId);
             return ps.executeUpdate();
-
         }
     }
 

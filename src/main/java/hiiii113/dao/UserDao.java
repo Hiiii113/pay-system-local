@@ -3,6 +3,7 @@ package hiiii113.dao;
 import hiiii113.entity.User;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.sql.SQLException;
 
 public interface UserDao
@@ -22,10 +23,12 @@ public interface UserDao
 
     /**
      * 用于修改用户的余额
-     * @param userId 用户的id
+     *
+     * @param conn 传入的连接，用于确保一个事务
+     * @param userId  用户的id
      * @param balance 修改完之后用户的余额
      */
-    int modifyBalanceById(Integer userId, BigDecimal balance) throws SQLException;
+    int modifyBalanceById(Connection conn, Integer userId, BigDecimal balance) throws SQLException;
 
     /**
      * 通过id查找用户

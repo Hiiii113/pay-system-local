@@ -8,8 +8,10 @@ import hiiii113.entity.TransactionRecord;
 import hiiii113.entity.User;
 import hiiii113.exception.BusinessException;
 import hiiii113.service.TransactionService;
+import hiiii113.util.DBUtil;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -17,6 +19,9 @@ import java.util.Objects;
 
 public class TransactionServiceImpl implements TransactionService
 {
+    private final UserDao userDao = new UserDaoImpl();
+    private final TransactionRecordDao transactionRecordDao = new TransactionRecordDaoImpl();
+
     @Override
     public List<TransactionRecord> getTransactionRecord(Integer userId) throws SQLException
     {
@@ -32,8 +37,6 @@ public class TransactionServiceImpl implements TransactionService
         {
             throw new BusinessException("金额必须大于0！");
         }
-        UserDao userDao = new UserDaoImpl();
-        TransactionRecordDao transactionRecordDao = new TransactionRecordDaoImpl();
         // 获取用户对象
         User user = userDao.getUserById(userId);
         if (user == null)
@@ -44,18 +47,63 @@ public class TransactionServiceImpl implements TransactionService
         BigDecimal previousBalance = user.getBalance();
         // 计算出新的账户余额
         BigDecimal newBalance = previousBalance.add(amount);
-        // 修改账户余额
-        int balanceInfectedRows = userDao.modifyBalanceById(userId, newBalance);
-        if (balanceInfectedRows == 0)
+        // 开启事务
+        Connection conn = DBUtil.getConnection();
+        try
         {
-            throw new BusinessException("数据库出现问题!");
+            // 设置自动提交为false
+            conn.setAutoCommit(false);
+            // 修改账户余额
+            int balanceInfectedRows = userDao.modifyBalanceById(conn, userId, newBalance);
+            if (balanceInfectedRows == 0)
+            {
+                throw new BusinessException("数据库出现问题!");
+            }
+            // 添加存款流水记录
+            int transactionInfectedRows = transactionRecordDao.addTransaction(conn, userId, 1, amount, null, newBalance);
+            if (transactionInfectedRows == 0)
+            {
+                throw new BusinessException("数据库出现问题!");
+            }
+
+            // 都成功，没有报错的，那就提交
+            conn.commit();
         }
-        // 添加存款流水记录
-        int transactionInfectedRows = transactionRecordDao.addTransaction(userId, 1, amount, null, newBalance);
-        if (transactionInfectedRows == 0)
+        catch (Exception e)
         {
-            throw new BusinessException("数据库出现问题!");
+            // 所有的可能导致事务执行失败的，都需要回滚
+            if (conn != null)
+            {
+                try
+                {
+                    conn.rollback();
+                }
+                catch (SQLException rollbackEx)
+                {
+                    rollbackEx.printStackTrace();
+                }
+            }
+            // 重新抛出异常，让controller提示用户
+            throw new RuntimeException("存款失败！", e);
         }
+        finally
+        {
+            if (conn != null)
+            {
+                try
+                {
+                    // 恢复默认提交为true
+                    conn.setAutoCommit(true);
+                    // 关闭连接
+                    conn.close();
+                }
+                catch (SQLException closeEx)
+                {
+                    closeEx.printStackTrace();
+                }
+            }
+        }
+
     }
 
     @Override
@@ -81,17 +129,59 @@ public class TransactionServiceImpl implements TransactionService
         {
             throw new BusinessException("余额不足！");
         }
-        // 修改账户余额
-        int balanceInfectedRows = userDao.modifyBalanceById(userId, newBalance);
-        if (balanceInfectedRows == 0)
+        // 开启事务
+        Connection conn = DBUtil.getConnection();
+        try
         {
-            throw new BusinessException("数据库出现问题!");
+            // 设置自动提交为false
+            conn.setAutoCommit(false);
+            // 修改账户余额
+            int balanceInfectedRows = userDao.modifyBalanceById(conn, userId, newBalance);
+            if (balanceInfectedRows == 0)
+            {
+                throw new BusinessException("数据库出现问题!");
+            }
+            // 添加存款流水记录
+            int transactionInfectedRows = transactionRecordDao.addTransaction(conn, userId, 2, amount, null, newBalance);
+            if (transactionInfectedRows == 0)
+            {
+                throw new BusinessException("数据库出现问题!");
+            }
+            // 没有报错则提交
+            conn.commit();
         }
-        // 添加存款流水记录
-        int transactionInfectedRows = transactionRecordDao.addTransaction(userId, 2, amount, null, newBalance);
-        if (transactionInfectedRows == 0)
+        catch (Exception e)
         {
-            throw new BusinessException("数据库出现问题!");
+            if (conn != null)
+            {
+                try
+                {
+                    conn.rollback();
+                }
+                catch (SQLException rollbackEx)
+                {
+                    rollbackEx.printStackTrace();
+                }
+            }
+            // 重新抛出异常，让controller提示用户
+            throw new RuntimeException("存款失败！", e);
+        }
+        finally
+        {
+            if (conn != null)
+            {
+                try
+                {
+                    // 恢复自动提交为true
+                    conn.setAutoCommit(true);
+                    // 关闭连接
+                    conn.close();
+                }
+                catch (SQLException closeEx)
+                {
+                    closeEx.printStackTrace();
+                }
+            }
         }
     }
 
@@ -129,19 +219,62 @@ public class TransactionServiceImpl implements TransactionService
         {
             throw new BusinessException("余额不足！");
         }
-        // 修改账户余额
-        int userBalanceInfectedRows = userDao.modifyBalanceById(userId, newUserBalance);
-        int targetUserBalanceInfectedRows = userDao.modifyBalanceById(targetUserId, newTargetUserBalance);
-        if (userBalanceInfectedRows == 0 || targetUserBalanceInfectedRows == 0)
+        Connection conn = DBUtil.getConnection();
+        try
         {
-            throw new BusinessException("数据库出现问题!");
+            // 设置自动提交为false
+            conn.setAutoCommit(false);
+            // 修改账户余额
+            int userBalanceInfectedRows = userDao.modifyBalanceById(conn, userId, newUserBalance);
+            int targetUserBalanceInfectedRows = userDao.modifyBalanceById(conn, targetUserId, newTargetUserBalance);
+            if (userBalanceInfectedRows == 0 || targetUserBalanceInfectedRows == 0)
+            {
+                throw new BusinessException("数据库出现问题!");
+            }
+            // 添加一条交易流水
+            int userTransactionInfectedRows = transactionRecordDao.addTransaction(conn, userId, 3, amount, targetUserId, newUserBalance);
+            int targetUserTransactionInfectedRows = transactionRecordDao.addTransaction(conn, targetUserId, 4, amount, userId, newTargetUserBalance);
+            if (userTransactionInfectedRows == 0 || targetUserTransactionInfectedRows == 0)
+            {
+                throw new BusinessException("数据库出现问题!");
+            }
+
+            // 没有报错则提交
+            conn.commit();
         }
-        // 添加一条交易流水
-        int userTransactionInfectedRows = transactionRecordDao.addTransaction(userId, 3, amount, targetUserId, newUserBalance);
-        int targetUserTransactionInfectedRows = transactionRecordDao.addTransaction(targetUserId, 4, amount, userId, newTargetUserBalance);
-        if (userTransactionInfectedRows == 0 || targetUserTransactionInfectedRows == 0)
+        catch (Exception e)
         {
-            throw new BusinessException("数据库出现问题!");
+            if (conn != null)
+            {
+                try
+                {
+                    // 回滚事务
+                    conn.rollback();
+                }
+                catch (SQLException rollbackEx)
+                {
+                    rollbackEx.printStackTrace();
+                }
+            }
+            // 重新抛出异常，让controller提示用户
+            throw new RuntimeException("存款失败！", e);
+        }
+        finally
+        {
+            if (conn != null)
+            {
+                try
+                {
+                    // 恢复自动提交为true
+                    conn.setAutoCommit(true);
+                    // 关闭连接
+                    conn.close();
+                }
+                catch (SQLException closeEx)
+                {
+                    closeEx.printStackTrace();
+                }
+            }
         }
     }
 
