@@ -2,8 +2,6 @@ package hiiii113.dao.impl;
 
 import hiiii113.dao.TransactionRecordDao;
 import hiiii113.entity.TransactionRecord;
-import hiiii113.exception.DataBaseWriteFailException;
-import hiiii113.util.Result;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -32,7 +30,7 @@ public class TransactionRecordDaoImpl implements TransactionRecordDao
 
     // 添加一笔新的流水
     @Override
-    public void addTransaction(Integer userId, Integer type, BigDecimal amount, Integer targetUserId, BigDecimal newBalance)
+    public int addTransaction(Integer userId, Integer type, BigDecimal amount, Integer targetUserId, BigDecimal newBalance) throws SQLException
     {
         String sql = "insert into transaction_record(user_id,type,amount,target_user_id,newBalance) values(?,?,?,?,?)";
         try (
@@ -52,27 +50,18 @@ public class TransactionRecordDaoImpl implements TransactionRecordDao
                 ps.setNull(4, Types.INTEGER);
             }
             ps.setBigDecimal(5, newBalance);
-            int infectedRows = ps.executeUpdate();
-            if (infectedRows == 0)
-            {
-                throw new DataBaseWriteFailException("数据库写入失败！");
-            }
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException("交易失败，数据库异常", e);
+            return ps.executeUpdate();
         }
     }
 
     @Override
-    public List<TransactionRecord> getTransactionRecord(Integer userId)
+    public List<TransactionRecord> getTransactionRecord(Integer userId) throws SQLException
     {
         String sql = "select create_time, type, amount, target_user_id, newBalance from transaction_record where user_id = ?";
         List<TransactionRecord> transactionRecordList = new ArrayList<>();
         try (
                 Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-                PreparedStatement ps = conn.prepareStatement(sql);
-        )
+                PreparedStatement ps = conn.prepareStatement(sql))
         {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery())
@@ -88,10 +77,6 @@ public class TransactionRecordDaoImpl implements TransactionRecordDao
                     transactionRecordList.add(transactionRecord);
                 }
             }
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException(e);
         }
         return transactionRecordList;
     }

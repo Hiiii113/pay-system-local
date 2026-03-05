@@ -1,9 +1,9 @@
 package hiiii113.dao;
 
 import hiiii113.entity.User;
-import hiiii113.util.Result;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 
 public interface UserDao
 {
@@ -11,42 +11,27 @@ public interface UserDao
      * 添加一条用户
      * @param user 用户相关信息
      */
-    void addUser(User user);
+    int addUser(User user) throws SQLException;
 
     /**
-     * 查询user表中是否存在该用户名
+     * 根据用户名查找用户
      * @param username 需要查找的用户名
-     * @return 返回是否查找到
+     * @return 返回查找到的用户对象
      */
-    boolean findSameUser(String username);
-
-    /**
-     * 查找数据库中是否存在对应的用户名和密码
-     * @param username 传入的用户名
-     * @param password 传入的密码
-     * @return 返回一个布尔值代表是否存在对应的账户
-     */
-    Result loginConfirm(String username, String password);
+    User getUserByUsername(String username) throws SQLException;
 
     /**
      * 用于修改用户的余额
      * @param userId 用户的id
      * @param balance 修改完之后用户的余额
      */
-    void modifyBalanceById(Integer userId, BigDecimal balance);
+    int modifyBalanceById(Integer userId, BigDecimal balance) throws SQLException;
 
     /**
-     * 获取对应用户id的余额
+     * 通过id查找用户
      *
-     * @param userId 传入的用户id
-     * @return 返回的BigDecimal放在Result的data里面
-     */
-    BigDecimal getBalanceById(Integer userId);
-
-    /**
-     * 通过id获取用户名
      * @param id 需要查询的用户id
-     * @return 返回用户名
+     * @return 返回用户对象
      */
-    String getUsernameById(Integer id);
+    User getUserById(Integer id) throws SQLException;
 }

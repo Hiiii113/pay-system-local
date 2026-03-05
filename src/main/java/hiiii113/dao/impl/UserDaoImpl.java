@@ -2,8 +2,6 @@ package hiiii113.dao.impl;
 
 import hiiii113.dao.UserDao;
 import hiiii113.entity.User;
-import hiiii113.exception.DataBaseWriteFailException;
-import hiiii113.util.Result;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -30,10 +28,10 @@ public class UserDaoImpl implements UserDao
 
     // 添加用户（注册用）
     @Override
-    public void addUser(User user)
+    public int addUser(User user) throws SQLException
     {
         // 设置sql命令
-        String sql = "insert into user(username, password,balance) values(?,?,?)";
+        String sql = "insert into user(username, password, balance) values(?,?,?)";
         // 连接数据库并预编译命令
         try (Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
              PreparedStatement ps = conn.prepareStatement(sql))
@@ -44,22 +42,14 @@ public class UserDaoImpl implements UserDao
             ps.setBigDecimal(3, user.getBalance());
 
             // 开始执行
-            int infectedRows = ps.executeUpdate();
-            if (infectedRows == 0)
-            {
-                throw new DataBaseWriteFailException("数据库写入异常！");
-            }
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException("注册失败，数据库异常", e);
+            return ps.executeUpdate();
         }
     }
 
     @Override
-    public boolean findSameUser(String username)
+    public User getUserByUsername(String username) throws SQLException
     {
-        String sql = "select count(*) as cnt from qg_bank.`user` where username = ?";
+        String sql = "select id, username, password, balance from user where username = ?";
         try (
                 Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
                 PreparedStatement ps = conn.prepareStatement(sql))
@@ -69,133 +59,53 @@ public class UserDaoImpl implements UserDao
             {
                 if (rs.next())
                 {
-                    int count = rs.getInt("cnt"); // 获取count(*)的结果
-                    return count > 0;
+                    int id = rs.getInt("id");
+                    String password = rs.getString("password");
+                    BigDecimal balance = rs.getBigDecimal("balance");
+                    return new User(id, username, password, balance);
                 }
             }
         }
-        catch (SQLException e)
-        {
-            throw new RuntimeException("用户名查重失败：数据库异常", e);
-        }
-        return false;
+        // 未查询到的返回值
+        return null;
     }
 
     @Override
-    public Result loginConfirm(String username, String password)
+    public int modifyBalanceById(Integer userId, BigDecimal balance) throws SQLException
     {
-        // 设置sql命令
-        String sql = "select count(*) as cnt, balance, id from qg_bank.`user` where username = ?  and password = ?";
-
+        String sql = "update user set balance = ? where id = ? ";
         try (
                 Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
                 PreparedStatement ps = conn.prepareStatement(sql))
-        {
-            ps.setString(1, username);
-            ps.setString(2, password);
-            try (ResultSet rs = ps.executeQuery())
-            {
-                if (rs.next())
-                {
-                    if (rs.getInt("cnt") == 1)
-                    {
-                        BigDecimal balance = rs.getBigDecimal("balance");
-                        Integer id = rs.getInt("id");
-                        User user = new User();
-                        user.setBalance(balance);
-                        user.setUsername(username);
-                        user.setPassword(password);
-                        user.setId(id);
-                        return Result.success(user);
-                    }
-                    else
-                    {
-                        return Result.fail("用户名或密码错误！");
-                    }
-                }
-            }
-            return Result.fail();
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException("查询数据库失败，数据库异常", e);
-        }
-    }
-
-    @Override
-    public void modifyBalanceById(Integer userId, BigDecimal balance)
-    {
-        String sql = "update user set balance=? where id=? ";
-        try (
-                Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-                PreparedStatement ps = conn.prepareStatement(sql)
-        )
         {
             ps.setBigDecimal(1, balance);
             ps.setInt(2, userId);
-            int infectedRows = ps.executeUpdate();
-            if (infectedRows == 0)
-            {
-                throw new DataBaseWriteFailException("数据库写入异常！");
-            }
+            return ps.executeUpdate();
 
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException("修改账户余额失败，数据库异常");
         }
     }
 
     @Override
-    public BigDecimal getBalanceById(Integer userId)
+    public User getUserById(Integer id) throws SQLException
     {
-        String sql = "select balance from user where id=?";
+        String sql = "select id, username, password, balance from user where id = ?";
         try (
                 Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-                PreparedStatement ps = conn.prepareStatement(sql)
-        )
-        {
-            ps.setInt(1, userId);
-            try (ResultSet rs = ps.executeQuery())
-            {
-                if (rs.next())
-                {
-                    return rs.getBigDecimal("balance");
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException("查询余额失败，数据库异常", e);
-        }
-    }
-
-    @Override
-    public String getUsernameById(Integer id)
-    {
-        String sql = "select username from user where id=?";
-        try (
-                Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-                PreparedStatement ps = conn.prepareStatement(sql);
-        )
+                PreparedStatement ps = conn.prepareStatement(sql))
         {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery())
             {
                 if (rs.next())
                 {
-                    return rs.getString("username");
+                    String username = rs.getString("username");
+                    String password = rs.getString("password");
+                    BigDecimal balance = rs.getBigDecimal("balance");
+                    return new User(id, username, password, balance);
                 }
             }
         }
-        catch (SQLException e)
-        {
-            throw new RuntimeException(e);
-        }
+        // 查询不到的返回结果
         return null;
     }
 

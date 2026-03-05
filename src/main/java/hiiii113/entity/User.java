@@ -1,6 +1,5 @@
 package hiiii113.entity;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -20,5 +19,13 @@ public class User
         this.username = username;
         this.password = password;
         this.balance = new BigDecimal(0);
+    }
+
+    public User(Integer id, String username, String password, BigDecimal balance)
+    {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.balance = balance;
     }
 }
