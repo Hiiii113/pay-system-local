@@ -14,6 +14,14 @@ public class UserServiceImpl implements UserService
     @Override
     public void Register(String username, String password) throws SQLException
     {
+        if (username == null || password == null)
+        {
+            throw new BusinessException("用户名和密码不能为空！");
+        }
+        if (username.length() > 20)
+        {
+            throw new BusinessException("用户名长度不能超过20！");
+        }
         UserDao userDao = new UserDaoImpl();
         // 调用函数查找
         User user = userDao.getUserByUsername(username);

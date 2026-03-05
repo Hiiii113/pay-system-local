@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 
 public class TransactionServiceImpl implements TransactionService
 {
@@ -27,6 +28,10 @@ public class TransactionServiceImpl implements TransactionService
     @Override
     public void deposit(Integer userId, BigDecimal amount) throws SQLException
     {
+        if (Objects.isNull(amount) || amount.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new BusinessException("金额必须大于0！");
+        }
         UserDao userDao = new UserDaoImpl();
         TransactionRecordDao transactionRecordDao = new TransactionRecordDaoImpl();
         // 获取用户对象
@@ -56,6 +61,10 @@ public class TransactionServiceImpl implements TransactionService
     @Override
     public void withdraw(Integer userId, BigDecimal amount) throws SQLException
     {
+        if (Objects.isNull(amount) || amount.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new BusinessException("金额必须大于0！");
+        }
         UserDao userDao = new UserDaoImpl();
         TransactionRecordDao transactionRecordDao = new TransactionRecordDaoImpl();
         // 获取用户对象
@@ -68,6 +77,10 @@ public class TransactionServiceImpl implements TransactionService
         BigDecimal previousBalance = user.getBalance();
         // 计算出新的账户余额
         BigDecimal newBalance = previousBalance.subtract(amount);
+        if (newBalance.compareTo(BigDecimal.ZERO) < 0)
+        {
+            throw new BusinessException("余额不足！");
+        }
         // 修改账户余额
         int balanceInfectedRows = userDao.modifyBalanceById(userId, newBalance);
         if (balanceInfectedRows == 0)
@@ -85,7 +98,10 @@ public class TransactionServiceImpl implements TransactionService
     @Override
     public void transfer(Integer userId, Integer targetUserId, BigDecimal amount) throws SQLException
     {
-
+        if (Objects.isNull(amount) || amount.compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new BusinessException("交易金额必须大于0！");
+        }
         UserDao userDao = new UserDaoImpl();
         TransactionRecordDao transactionRecordDao = new TransactionRecordDaoImpl();
         // 获取双方用户对象
@@ -99,12 +115,20 @@ public class TransactionServiceImpl implements TransactionService
         {
             throw new BusinessException("对方账户不存在!");
         }
+        else if (Objects.equals(user.getId(), targetUser.getId()))
+        {
+            throw new BusinessException("不能给自己转账！");
+        }
         // 获取双方账户余额
         BigDecimal userBalance = user.getBalance();
         BigDecimal targetUserBalance = targetUser.getBalance();
         // 计算出双方新的账户余额
         BigDecimal newUserBalance = userBalance.subtract(amount);
         BigDecimal newTargetUserBalance = targetUserBalance.add(amount);
+        if (newUserBalance.compareTo(BigDecimal.ZERO) < 0)
+        {
+            throw new BusinessException("余额不足！");
+        }
         // 修改账户余额
         int userBalanceInfectedRows = userDao.modifyBalanceById(userId, newUserBalance);
         int targetUserBalanceInfectedRows = userDao.modifyBalanceById(targetUserId, newTargetUserBalance);

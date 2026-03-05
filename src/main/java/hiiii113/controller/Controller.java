@@ -9,6 +9,7 @@ import hiiii113.service.UserService;
 import hiiii113.service.impl.TransactionServiceImpl;
 import hiiii113.service.impl.UserServiceImpl;
 import hiiii113.util.GenerateCaptcha;
+import hiiii113.util.Input;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -111,7 +112,7 @@ public class Controller
                 {
                     case 1:
                         System.out.print("请输入你要存入的金额: ");
-                        BigDecimal inputAmount = new BigDecimal(in.nextLine());
+                        BigDecimal inputAmount = Input.readAmount();
                         // 调用存款函数
                         transactionService.deposit(user.getId(), inputAmount);
                         // 更新
@@ -119,7 +120,7 @@ public class Controller
                         break;
                     case 2:
                         System.out.print("请输入你要取出的金额: ");
-                        BigDecimal outputAmount = new BigDecimal(in.nextLine());
+                        BigDecimal outputAmount = Input.readAmount();
                         // 调用取款函数
                         transactionService.withdraw(user.getId(), outputAmount);
                         // 更新
@@ -129,7 +130,7 @@ public class Controller
                         System.out.println("请输入你要转给的用户id：");
                         Integer targetUserId = Integer.parseInt(in.nextLine());
                         System.out.println("请输入转账金额：");
-                        BigDecimal giveAmount = new BigDecimal(in.nextLine());
+                        BigDecimal giveAmount = Input.readAmount();
                         // 调用转账函数
                         transactionService.transfer(user.getId(), targetUserId, giveAmount);
                         // 更新
